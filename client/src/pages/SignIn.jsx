@@ -1,13 +1,12 @@
 import { Alert, Button, Label, Spinner, TextInput } from 'flowbite-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch ,useSelector} from 'react-redux';
-import { signInStart,signInSuccess,signInFailure } from '../redux/user/userSlice';
+import OAuth from '../components/OAuth';
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
-  const {loading,error:errorMessage} = useSelector(state => state.user) 
-  const dispatch = useDispatch();
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
@@ -15,10 +14,11 @@ export default function SignIn() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
-      return dispatch(signInFailure('please fil all the fields'))
+      return setErrorMessage('Please fill out all fields.');
     }
     try {
-      dispatch(signInStart());
+      setLoading(true);
+      setErrorMessage(null);
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -26,15 +26,15 @@ export default function SignIn() {
       });
       const data = await res.json();
       if (data.success === false) {
-        dispatch(signInFailure(data.message))
+        return setErrorMessage(data.message);
       }
-      
+      setLoading(false);
       if (res.ok) {
-        dispatch(signInSuccess(data));
         navigate('/');
       }
     } catch (error) {
-      dispatch(signInFailure(error.message));
+      setErrorMessage(error.message);
+      setLoading(false);
     }
   };
   return (
@@ -89,6 +89,7 @@ export default function SignIn() {
                 'Sign In'
               )}
             </Button>
+            <OAuth/>
           </form>
           <div className='flex gap-2 text-sm mt-5'>
             <span>Dont Have an account?</span>
